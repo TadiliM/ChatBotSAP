@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: evolution_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution123
+    command:
+      - postgres
+      - -c
+      - max_connections=1000
+      - -c
+      - listen_addresses=*
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    expose:
+      - "5432"
+    ports:
+      - "5433:5432"
+
+
+
+
+  chatbot:
+    image: chatbot
+    container_name: chatbot_server
+    build:
+      context: ./ChatBot
+      dockerfile: Dockerfile
+    env_file: Chatbot/.env
+    ports:
+      - "5174:8080"
+
+  sapquery:
+    image: sapqueryserver
+    container_name: sapquery_server
+    build:
+      context: ./SAPQueryServer
+      dockerfile: Dockerfile
+    env_file: SAPQueryServer/.env
+    depends_on:
+      - postgres
+    ports:
+      - "5286:8080"
+
+  addclient:
+    image: addclient
+    container_name: addclient_tool
+    build:
+      context: ./AddClient
+      dockerfile: Dockerfile
+    env_file: AddClient/.env
+    depends_on:
+      - postgres
+    entrypoint: ["tail", "-f", "/dev/null"]
+    restart: always
+
+
+
+
+volumes:
+  postgres_data:
